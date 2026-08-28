@@ -7,6 +7,12 @@ public class Message {
     public Message() {
     }
 
+    public Message(String content, MessageRoleEnum messageRole) {
+        this.content = content;
+        this.messageRole = messageRole;
+        this.timestamp = System.currentTimeMillis();
+    }
+
     private String content;
     private MessageRoleEnum messageRole;
     private Long timestamp;
