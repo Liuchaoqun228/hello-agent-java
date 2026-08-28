@@ -18,6 +18,10 @@ class SimpleAgentStarterTest {
     @Test
     void shouldCreateDefaultAgent() {
         assertThat(agent).isInstanceOf(BaseAgent.class);
+        String answer1 = agent.chat("我是刘六六");
+        System.out.println("answer1 = " + answer1);
+        String answer2 = agent.chat("我是谁");
+        System.out.println("answer2 = " + answer2);
     }
 
 }

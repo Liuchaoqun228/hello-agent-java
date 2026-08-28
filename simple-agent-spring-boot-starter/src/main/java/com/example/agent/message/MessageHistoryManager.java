@@ -1,7 +1,6 @@
 package com.example.agent.message;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,8 +13,16 @@ public class MessageHistoryManager {
         history.add(message);
     }
 
+    public synchronized boolean remove(Message message) {
+        return history.remove(message);
+    }
+
+    public synchronized boolean isEmpty() {
+        return history.isEmpty();
+    }
+
     public synchronized List<Message> getHistory() {
-        return Collections.unmodifiableList(new ArrayList<>(history));
+        return new ArrayList<>(history);
     }
 
     public synchronized void clear() {
