@@ -17,7 +17,6 @@ public abstract class AbstractAgent implements Agent {
         this.model = model;
     }
 
-    @Override
     public final ChatCompletion run(String input) {
         Assert.hasText(input, "input must not be empty");
         ChatCompletionCreateParams request = buildRequest(input);

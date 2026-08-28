@@ -1,7 +1,7 @@
 package com.example.agent.autoconfigure;
 
 import com.example.agent.agent.Agent;
-import com.example.agent.agent.BaseAgent;
+import com.example.agent.agent.impl.BaseAgent;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

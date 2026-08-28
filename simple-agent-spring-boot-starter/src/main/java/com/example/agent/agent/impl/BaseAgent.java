@@ -1,5 +1,6 @@
-package com.example.agent.agent;
+package com.example.agent.agent.impl;
 
+import com.example.agent.agent.AbstractAgent;
 import com.openai.client.OpenAIClient;
 
 public class BaseAgent extends AbstractAgent {
