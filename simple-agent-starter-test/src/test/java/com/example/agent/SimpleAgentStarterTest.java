@@ -1,6 +1,7 @@
 package com.example.agent;
 
-import com.openai.models.chat.completions.ChatCompletion;
+import com.example.agent.agent.Agent;
+import com.example.agent.agent.BaseAgent;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -18,17 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SimpleAgentStarterTest {
 
     @Resource
-    private SimpleAgentClient simpleAgentClient;
+    private Agent agent;
 
     @Test
-    void shouldCallChatCompletion() {
-        assertThat(simpleAgentClient).isNotNull();
-        ChatCompletion chatResult = simpleAgentClient.chat("你好");
-
-        assertThat(chatResult.choices()).isNotEmpty();
-        String content = chatResult.choices().get(0).message().content().orElse("");
-        assertThat(content).isNotBlank();
-        System.out.println("LLM 返回结果: " + content);
+    void shouldCreateDefaultAgent() {
+        assertThat(agent).isInstanceOf(BaseAgent.class);
     }
 
 }

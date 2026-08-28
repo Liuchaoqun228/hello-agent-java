@@ -1,6 +1,7 @@
 package com.example.agent.autoconfigure;
 
-import com.example.agent.SimpleAgentClient;
+import com.example.agent.agent.Agent;
+import com.example.agent.agent.BaseAgent;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -13,15 +14,15 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(OpenAIClient.class)
 @ConditionalOnProperty(
-        prefix = SimpleAgentProperties.PREFIX,
+        prefix = LLMProperties.PREFIX,
         name = {"api-key", "model"}
 )
-@EnableConfigurationProperties(SimpleAgentProperties.class)
-public class SimpleAgentAutoConfiguration {
+@EnableConfigurationProperties(LLMProperties.class)
+public class SimpleLLMAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public OpenAIClient openAIClient(SimpleAgentProperties properties) {
+    public OpenAIClient openAIClient(LLMProperties properties) {
         return OpenAIOkHttpClient.builder()
                 .apiKey(properties.getApiKey())
                 .baseUrl(properties.getBaseUrl())
@@ -29,10 +30,8 @@ public class SimpleAgentAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
-    public SimpleAgentClient simpleAgentClient(
-            OpenAIClient openAIClient,
-            SimpleAgentProperties properties) {
-        return new SimpleAgentClient(openAIClient, properties.getModel());
+    @ConditionalOnMissingBean(Agent.class)
+    public BaseAgent baseAgent(OpenAIClient openAIClient, LLMProperties properties) {
+        return new BaseAgent(openAIClient, properties.getModel());
     }
 }

@@ -2,8 +2,8 @@ package com.example.agent.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = SimpleAgentProperties.PREFIX)
-public class SimpleAgentProperties {
+@ConfigurationProperties(prefix = LLMProperties.PREFIX)
+public class LLMProperties {
 
     public static final String PREFIX = "simple.agent.openai";
 
