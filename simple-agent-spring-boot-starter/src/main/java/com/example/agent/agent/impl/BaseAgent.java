@@ -9,6 +9,8 @@ import com.example.agent.tool.Tool;
 import com.example.agent.tool.ToolCall;
 import com.example.agent.tool.ToolRegistry;
 import com.openai.client.OpenAIClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -17,6 +19,7 @@ import java.util.List;
 
 public class BaseAgent extends AbstractAgent {
 
+    private static final Logger log = LoggerFactory.getLogger(BaseAgent.class);
     private static final int MAX_TOOL_CALL_ROUNDS = 3;
 
     private final MessageHistoryManager messageHistoryManager = new MessageHistoryManager();
@@ -40,6 +43,7 @@ public class BaseAgent extends AbstractAgent {
     @Override
     public String chat(String input, ChatOptions config) {
         Assert.hasText(input, "input must not be empty");
+        log.info("用户消息：{}", input);
 
         // 基于已提交的对话历史构建本次请求。
         List<Message> messages = messageHistoryManager.getHistory();
@@ -60,14 +64,9 @@ public class BaseAgent extends AbstractAgent {
 
         // 执行模型请求的全部工具，并在轮次限制内让模型继续处理。
         for (int round = 0; !CollectionUtils.isEmpty(toolCalls) && round < MAX_TOOL_CALL_ROUNDS; round++) {
-            for (ToolCall toolCall : toolCalls) {
-                String result = toolRegistry.execute(toolCall.getName(), toolCall.getArguments());
-                Assert.hasText(result, "tool exec result must not be empty: " + toolCall.getName());
-
-                Message toolExecResult = new Message(result, MessageRoleEnum.TOOL_EXEC_RESULT);
-                toolExecResult.setToolCallId(toolCall.getId());
-                messages.add(toolExecResult);
-            }
+            // 执行工具
+            List<Message> toolsResultMessaList = toolRegistry.execute(toolCalls);
+            messages.addAll(toolsResultMessaList);
             //  工具执行完 在此调用大模型
             assistantMessage = call(messages, tools);
             messages.add(assistantMessage);
@@ -79,6 +78,7 @@ public class BaseAgent extends AbstractAgent {
         Assert.state(CollectionUtils.isEmpty(toolCalls), "tool call rounds exceed limit: " + MAX_TOOL_CALL_ROUNDS);
         Assert.hasText(assistantMessage.getContent(), "assistant answer must not be empty");
         messageHistoryManager.addAll(messages.subList(newMessagesStart, messages.size()));
+        log.info("Agent 消息：{}", assistantMessage.getContent());
         return assistantMessage.getContent();
     }
 }
