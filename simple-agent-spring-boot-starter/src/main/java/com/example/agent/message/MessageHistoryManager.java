@@ -13,6 +13,14 @@ public class MessageHistoryManager {
         history.add(message);
     }
 
+    public synchronized void addAll(List<Message> messages) {
+        Objects.requireNonNull(messages, "messages must not be null");
+        for (Message message : messages) {
+            Objects.requireNonNull(message, "message must not be null");
+        }
+        history.addAll(messages);
+    }
+
     public synchronized boolean remove(Message message) {
         return history.remove(message);
     }

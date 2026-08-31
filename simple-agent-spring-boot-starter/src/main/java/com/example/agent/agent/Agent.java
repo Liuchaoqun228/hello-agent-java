@@ -5,5 +5,5 @@ public interface Agent {
 
     String chat(String input);
 
-    String chat(String input, ChatConfig config);
+    String chat(String input, ChatOptions config);
 }
