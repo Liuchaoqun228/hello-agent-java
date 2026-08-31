@@ -13,12 +13,11 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class BaseAgent extends AbstractAgent {
 
-    private static final int MAX_TOOL_CALL_ROUNDS = 10;
+    private static final int MAX_TOOL_CALL_ROUNDS = 3;
 
     private final MessageHistoryManager messageHistoryManager = new MessageHistoryManager();
     private final ToolRegistry toolRegistry;
@@ -42,46 +41,44 @@ public class BaseAgent extends AbstractAgent {
     public String chat(String input, ChatOptions config) {
         Assert.hasText(input, "input must not be empty");
 
-        List<Message> history = messageHistoryManager.getHistory();
-        List<Message> turnMessages = new ArrayList<>();
-        List<Message> workingMessages = new ArrayList<>(history);
+        // 基于已提交的对话历史构建本次请求。
+        List<Message> messages = messageHistoryManager.getHistory();
+        int newMessagesStart = messages.size();
 
-        if (history.isEmpty() && config != null && StringUtils.hasText(config.getSystemPrompt())) {
-            turnMessages.add(new Message(config.getSystemPrompt(), MessageRoleEnum.SYSTEM));
+        // 仅在新对话开始时添加系统提示词。
+        if (messages.isEmpty() && config != null && StringUtils.hasText(config.getSystemPrompt())) {
+            messages.add(new Message(config.getSystemPrompt(), MessageRoleEnum.SYSTEM));
         }
 
-        Message userMessage = new Message(input, MessageRoleEnum.USER);
-        turnMessages.add(userMessage);
-        workingMessages.addAll(turnMessages);
+        messages.add(new Message(input, MessageRoleEnum.USER));
 
+        // 请求模型生成最终回答或发起工具调用。
         List<Tool> tools = toolRegistry.getTools();
-        int toolCallRounds = 0;
+        Message assistantMessage = call(messages, tools);
+        messages.add(assistantMessage);
+        List<ToolCall> toolCalls = assistantMessage.getToolCallList();
 
-        while (true) {
-            Message assistantMessage = call(workingMessages, tools);
-            turnMessages.add(assistantMessage);
-            workingMessages.add(assistantMessage);
-
-            List<ToolCall> toolCalls = assistantMessage.getAssistantNeedExecToolCallList();
-            if (CollectionUtils.isEmpty(toolCalls)) {
-                Assert.hasText(assistantMessage.getContent(), "assistant answer must not be empty");
-                messageHistoryManager.addAll(turnMessages);
-                return assistantMessage.getContent();
-            }
-
-            Assert.state(toolCallRounds < MAX_TOOL_CALL_ROUNDS,
-                    "tool call rounds exceed limit: " + MAX_TOOL_CALL_ROUNDS);
-            toolCallRounds++;
-
+        // 执行模型请求的全部工具，并在轮次限制内让模型继续处理。
+        for (int round = 0; !CollectionUtils.isEmpty(toolCalls) && round < MAX_TOOL_CALL_ROUNDS; round++) {
             for (ToolCall toolCall : toolCalls) {
                 String result = toolRegistry.execute(toolCall.getName(), toolCall.getArguments());
                 Assert.hasText(result, "tool exec result must not be empty: " + toolCall.getName());
 
                 Message toolExecResult = new Message(result, MessageRoleEnum.TOOL_EXEC_RESULT);
                 toolExecResult.setToolCallId(toolCall.getId());
-                turnMessages.add(toolExecResult);
-                workingMessages.add(toolExecResult);
+                messages.add(toolExecResult);
             }
+            //  工具执行完 在此调用大模型
+            assistantMessage = call(messages, tools);
+            messages.add(assistantMessage);
+            // 看看是否需要调用别的工具
+            toolCalls = assistantMessage.getToolCallList();
         }
+
+        // 仅将成功完成的本轮消息提交到对话历史。
+        Assert.state(CollectionUtils.isEmpty(toolCalls), "tool call rounds exceed limit: " + MAX_TOOL_CALL_ROUNDS);
+        Assert.hasText(assistantMessage.getContent(), "assistant answer must not be empty");
+        messageHistoryManager.addAll(messages.subList(newMessagesStart, messages.size()));
+        return assistantMessage.getContent();
     }
 }

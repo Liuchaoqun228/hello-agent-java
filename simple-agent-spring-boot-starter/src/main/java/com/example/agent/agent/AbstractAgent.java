@@ -96,7 +96,7 @@ public abstract class AbstractAgent implements Agent {
     }
 
     private void addAssistantMessage(ChatCompletionCreateParams.Builder builder, Message message) {
-        List<ToolCall> toolCalls = message.getAssistantNeedExecToolCallList();
+        List<ToolCall> toolCalls = message.getToolCallList();
         if (CollectionUtils.isEmpty(toolCalls)) {
             Assert.hasText(message.getContent(), "assistant message content must not be empty");
             builder.addAssistantMessage(message.getContent());
@@ -167,8 +167,7 @@ public abstract class AbstractAgent implements Agent {
 
     private Message toMessage(ChatCompletionMessage openAIMessage) {
         List<ToolCall> toolCalls = new ArrayList<>();
-        for (ChatCompletionMessageToolCall openAIToolCall
-                : openAIMessage.toolCalls().orElse(Collections.emptyList())) {
+        for (ChatCompletionMessageToolCall openAIToolCall : openAIMessage.toolCalls().orElse(Collections.emptyList())) {
             Assert.state(openAIToolCall.isFunction(), "only function tool calls are supported");
             ChatCompletionMessageFunctionToolCall functionToolCall = openAIToolCall.asFunction();
             toolCalls.add(new ToolCall(
@@ -184,7 +183,7 @@ public abstract class AbstractAgent implements Agent {
 
         Message message = new Message(content, MessageRoleEnum.ASSISTANT);
         if (!toolCalls.isEmpty()) {
-            message.setAssistantNeedExecToolCallList(toolCalls);
+            message.setToolCallList(toolCalls);
         }
         return message;
     }

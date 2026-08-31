@@ -1,4 +1,7 @@
-# Repository Instructions
+# 仓库约定
 
-- Stage every newly created repository file with `git add` before finishing the task.
-- Do not create a Git commit unless the user explicitly requests one.
+- 完成任务前，使用 `git add` 暂存仓库中新创建的文件。
+- 除非用户明确要求，否则不要创建 Git 提交。
+- 每个主要逻辑块前添加简短的中文注释，说明设计意图，不要逐行复述代码。
+- 日志调用和 `for` 循环条件保持单行，不要换行书写。
+- 不要为了假设中的未来需求刻意封装方法；仅在当前存在明确复用、复杂度隔离或可读性收益时抽取方法。

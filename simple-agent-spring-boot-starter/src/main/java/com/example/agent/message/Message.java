@@ -7,6 +7,13 @@ import java.util.Map;
 
 public class Message {
 
+    private String content;
+    private MessageRoleEnum messageRole;
+    private Long timestamp;
+    private Map<String, Object> meta;
+    private List<ToolCall> toolCallList;
+    private String toolCallId;
+
     public Message() {
     }
 
@@ -15,13 +22,6 @@ public class Message {
         this.messageRole = messageRole;
         this.timestamp = System.currentTimeMillis();
     }
-
-    private String content;
-    private MessageRoleEnum messageRole;
-    private Long timestamp;
-    private Map<String, Object> meta;
-    private List<ToolCall> assistantNeedExecToolCallList;
-    private String toolCallId;
 
     public MessageRoleEnum getMessageRole() {
         return messageRole;
@@ -55,12 +55,12 @@ public class Message {
         this.content = content;
     }
 
-    public List<ToolCall> getAssistantNeedExecToolCallList() {
-        return assistantNeedExecToolCallList;
+    public List<ToolCall> getToolCallList() {
+        return toolCallList;
     }
 
-    public void setAssistantNeedExecToolCallList(List<ToolCall> assistantNeedExecToolCallList) {
-        this.assistantNeedExecToolCallList = assistantNeedExecToolCallList;
+    public void setToolCallList(List<ToolCall> toolCallList) {
+        this.toolCallList = toolCallList;
     }
 
     public String getToolCallId() {
