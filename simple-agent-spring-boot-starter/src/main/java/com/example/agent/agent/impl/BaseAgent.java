@@ -55,26 +55,35 @@ public class BaseAgent extends AbstractAgent {
 
         messages.add(new Message(input, MessageRoleEnum.USER));
 
-        // 请求模型生成最终回答或发起工具调用。
-        List<ToolDefinition> tools = toolManager.getToolDefinitions();
-        Message assistantMessage = call(messages, tools);
-        messages.add(assistantMessage);
-        List<ToolCall> toolCalls = assistantMessage.getToolCallList();
+        Message assistantMessage;
 
-        // 执行模型请求的全部工具，并在轮次限制内让模型继续处理。
-        for (int round = 0; !CollectionUtils.isEmpty(toolCalls) && round < MAX_TOOL_CALL_ROUNDS; round++) {
-            // 执行工具
-            List<Message> toolsResultMessaList = toolManager.execute(toolCalls);
-            messages.addAll(toolsResultMessaList);
-            //  工具执行完 在此调用大模型
+        // 未配置工具时直接请求模型，不进入工具调用流程。
+        if (toolManager == null || CollectionUtils.isEmpty(toolManager.getToolDefinitions())) {
+            assistantMessage = call(messages);
+            messages.add(assistantMessage);
+            Assert.state(CollectionUtils.isEmpty(assistantMessage.getToolCallList()), "model returned tool calls but no tool manager is configured");
+        } else {
+            // 请求模型生成最终回答或发起工具调用。
+            List<ToolDefinition> tools = toolManager.getToolDefinitions();
             assistantMessage = call(messages, tools);
             messages.add(assistantMessage);
-            // 看看是否需要调用别的工具
-            toolCalls = assistantMessage.getToolCallList();
-        }
+            List<ToolCall> toolCalls = assistantMessage.getToolCallList();
 
+            // 执行模型请求的全部工具，并在轮次限制内让模型继续处理。
+            for (int round = 0; !CollectionUtils.isEmpty(toolCalls) && round < MAX_TOOL_CALL_ROUNDS; round++) {
+                // 执行工具
+                List<Message> toolsResultMessaList = toolManager.execute(toolCalls);
+                messages.addAll(toolsResultMessaList);
+                //  工具执行完 在此调用大模型
+                assistantMessage = call(messages, tools);
+                messages.add(assistantMessage);
+                // 看看是否需要调用别的工具
+                toolCalls = assistantMessage.getToolCallList();
+            }
+
+            Assert.state(CollectionUtils.isEmpty(toolCalls), "tool call rounds exceed limit: " + MAX_TOOL_CALL_ROUNDS);
+        }
         // 仅将成功完成的本轮消息提交到对话历史。
-        Assert.state(CollectionUtils.isEmpty(toolCalls), "tool call rounds exceed limit: " + MAX_TOOL_CALL_ROUNDS);
         Assert.hasText(assistantMessage.getContent(), "assistant answer must not be empty");
         messageHistoryManager.addAll(messages.subList(newMessagesStart, messages.size()));
         log.info("Agent 消息：{}", assistantMessage.getContent());
