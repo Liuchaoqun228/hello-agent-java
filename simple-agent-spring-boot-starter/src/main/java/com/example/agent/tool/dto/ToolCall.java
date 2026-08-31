@@ -1,4 +1,4 @@
-package com.example.agent.tool;
+package com.example.agent.tool.dto;
 
 import java.util.Map;
 

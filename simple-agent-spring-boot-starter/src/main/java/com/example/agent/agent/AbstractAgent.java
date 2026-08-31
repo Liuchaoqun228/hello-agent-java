@@ -1,8 +1,8 @@
 package com.example.agent.agent;
 
-import com.example.agent.tool.Tool;
-import com.example.agent.tool.ToolCall;
-import com.example.agent.tool.ToolParameter;
+import com.example.agent.tool.dto.ToolCall;
+import com.example.agent.tool.dto.ToolDefinition;
+import com.example.agent.tool.dto.ToolParameter;
 import com.example.agent.message.Message;
 import com.example.agent.message.MessageRoleEnum;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -51,7 +51,7 @@ public abstract class AbstractAgent implements Agent {
         return call(messages, Collections.emptyList());
     }
 
-    protected final Message call(List<Message> messages, List<Tool> tools) {
+    protected final Message call(List<Message> messages, List<ToolDefinition> tools) {
         Assert.notEmpty(messages, "messages must not be empty");
         Assert.notNull(tools, "tools must not be null");
 
@@ -61,7 +61,7 @@ public abstract class AbstractAgent implements Agent {
         for (Message message : messages) {
             addMessage(builder, message);
         }
-        for (Tool tool : tools) {
+        for (ToolDefinition tool : tools) {
             addTool(builder, tool);
         }
 
@@ -127,7 +127,7 @@ public abstract class AbstractAgent implements Agent {
         builder.addMessage(assistantBuilder.build());
     }
 
-    private void addTool(ChatCompletionCreateParams.Builder builder, Tool tool) {
+    private void addTool(ChatCompletionCreateParams.Builder builder, ToolDefinition tool) {
         Assert.notNull(tool, "tool must not be null");
 
         Map<String, Object> properties = new LinkedHashMap<>();
@@ -141,11 +141,8 @@ public abstract class AbstractAgent implements Agent {
 
                 Map<String, Object> property = new LinkedHashMap<>();
                 property.put("type", parameter.getType());
-                property.put("description", parameter.getDescription());
                 properties.put(parameter.getName(), property);
-                if (parameter.isRequired()) {
-                    required.add(parameter.getName());
-                }
+                required.add(parameter.getName());
             }
         }
 

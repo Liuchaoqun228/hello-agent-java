@@ -5,9 +5,9 @@ import com.example.agent.agent.ChatOptions;
 import com.example.agent.message.Message;
 import com.example.agent.message.MessageHistoryManager;
 import com.example.agent.message.MessageRoleEnum;
-import com.example.agent.tool.Tool;
-import com.example.agent.tool.ToolCall;
-import com.example.agent.tool.ToolRegistry;
+import com.example.agent.tool.dto.ToolCall;
+import com.example.agent.tool.dto.ToolDefinition;
+import com.example.agent.tool.ToolManager;
 import com.openai.client.OpenAIClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,16 +23,15 @@ public class BaseAgent extends AbstractAgent {
     private static final int MAX_TOOL_CALL_ROUNDS = 3;
 
     private final MessageHistoryManager messageHistoryManager = new MessageHistoryManager();
-    private final ToolRegistry toolRegistry;
+    private ToolManager toolManager;
 
     public BaseAgent(OpenAIClient openAIClient, String model) {
-        this(openAIClient, model, new ToolRegistry());
+        super(openAIClient, model);
     }
 
-    public BaseAgent(OpenAIClient openAIClient, String model, ToolRegistry toolRegistry) {
-        super(openAIClient, model);
-        Assert.notNull(toolRegistry, "toolRegistry must not be null");
-        this.toolRegistry = toolRegistry;
+    @Override
+    public void setToolManager(ToolManager toolManager) {
+        this.toolManager = toolManager;
     }
 
     @Override
@@ -57,7 +56,7 @@ public class BaseAgent extends AbstractAgent {
         messages.add(new Message(input, MessageRoleEnum.USER));
 
         // 请求模型生成最终回答或发起工具调用。
-        List<Tool> tools = toolRegistry.getTools();
+        List<ToolDefinition> tools = toolManager.getToolDefinitions();
         Message assistantMessage = call(messages, tools);
         messages.add(assistantMessage);
         List<ToolCall> toolCalls = assistantMessage.getToolCallList();
@@ -65,7 +64,7 @@ public class BaseAgent extends AbstractAgent {
         // 执行模型请求的全部工具，并在轮次限制内让模型继续处理。
         for (int round = 0; !CollectionUtils.isEmpty(toolCalls) && round < MAX_TOOL_CALL_ROUNDS; round++) {
             // 执行工具
-            List<Message> toolsResultMessaList = toolRegistry.execute(toolCalls);
+            List<Message> toolsResultMessaList = toolManager.execute(toolCalls);
             messages.addAll(toolsResultMessaList);
             //  工具执行完 在此调用大模型
             assistantMessage = call(messages, tools);
@@ -81,4 +80,5 @@ public class BaseAgent extends AbstractAgent {
         log.info("Agent 消息：{}", assistantMessage.getContent());
         return assistantMessage.getContent();
     }
+
 }

@@ -1,6 +1,6 @@
 package com.example.agent.message;
 
-import com.example.agent.tool.ToolCall;
+import com.example.agent.tool.dto.ToolCall;
 
 import java.util.List;
 import java.util.Map;

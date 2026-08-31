@@ -2,19 +2,15 @@ package com.example.agent.autoconfigure;
 
 import com.example.agent.agent.Agent;
 import com.example.agent.agent.impl.BaseAgent;
-import com.example.agent.tool.Tool;
-import com.example.agent.tool.ToolRegistry;
+import com.example.agent.tool.ToolManager;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.stream.Collectors;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(OpenAIClient.class)
@@ -35,16 +31,9 @@ public class SimpleLLMAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
-    public ToolRegistry toolRegistry(ObjectProvider<Tool> tools) {
-        return new ToolRegistry(tools.orderedStream().collect(Collectors.toList()));
-    }
-
-    @Bean
     @ConditionalOnMissingBean(Agent.class)
     public BaseAgent baseAgent(OpenAIClient openAIClient,
-                               LLMProperties properties,
-                               ToolRegistry toolRegistry) {
-        return new BaseAgent(openAIClient, properties.getModel(), toolRegistry);
+                               LLMProperties properties) {
+        return new BaseAgent(openAIClient, properties.getModel());
     }
 }
