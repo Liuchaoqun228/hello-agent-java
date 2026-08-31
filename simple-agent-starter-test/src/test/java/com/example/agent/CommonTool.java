@@ -1,4 +1,4 @@
-package com.example.agent.tools;
+package com.example.agent;
 
 import com.example.agent.tool.anno.Tool;
 import com.example.agent.tool.anno.ToolDescription;

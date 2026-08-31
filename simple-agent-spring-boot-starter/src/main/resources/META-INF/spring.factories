@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.example.agent.autoconfigure.SimpleLLMAutoConfiguration
+com.example.agent.autoconfigure.LLMAutoConfiguration

@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
         name = {"api-key", "model"}
 )
 @EnableConfigurationProperties(LLMProperties.class)
-public class SimpleLLMAutoConfiguration {
+public class LLMAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
@@ -34,6 +34,7 @@ public class SimpleLLMAutoConfiguration {
     @ConditionalOnMissingBean(Agent.class)
     public BaseAgent baseAgent(OpenAIClient openAIClient,
                                LLMProperties properties) {
-        return new BaseAgent(openAIClient, properties.getModel());
+        BaseAgent agent = new BaseAgent(openAIClient, properties.getModel());
+        return agent;
     }
 }
