@@ -1,7 +1,6 @@
 package com.example.agent.tool.dto;
 
-import org.springframework.util.Assert;
-
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,16 +10,16 @@ public final class ToolDefinition {
     private final String name;
     private final String description;
     private final List<ToolParameter> parameters;
+    private final Object target;
+    private final Method method;
 
-    public ToolDefinition(String name, String description, List<ToolParameter> parameters) {
-        Assert.hasText(name, "tool name must not be empty");
-        Assert.hasText(description, "tool description must not be empty");
-        Assert.notNull(parameters, "tool parameters must not be null");
-
-        // 注册完成后冻结工具定义，避免请求期间的 Schema 被外部修改。
+    public ToolDefinition(String name, String description, List<ToolParameter> parameters, Object target, Method method) {
+        // 工具定义同时保存模型 Schema 与实际调用目标，注册后不可变。
         this.name = name;
         this.description = description;
         this.parameters = Collections.unmodifiableList(new ArrayList<>(parameters));
+        this.target = target;
+        this.method = method;
     }
 
     public String getName() {
@@ -33,5 +32,13 @@ public final class ToolDefinition {
 
     public List<ToolParameter> getParameters() {
         return parameters;
+    }
+
+    public Object getTarget() {
+        return target;
+    }
+
+    public Method getMethod() {
+        return method;
     }
 }
