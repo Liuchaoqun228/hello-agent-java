@@ -19,9 +19,9 @@ import java.util.List;
 import java.util.UUID;
 
 // 默认记忆实现：每个用户一个 JSON 文件，按关键词相关度、重要性和时间排序检索。
-public class JsonMemoryStrategy implements Memory {
+public class JsonMemoryStrategyStrategyImpl implements MemoryStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(JsonMemoryStrategy.class);
+    private static final Logger log = LoggerFactory.getLogger(JsonMemoryStrategyStrategyImpl.class);
 
     private static final TypeReference<List<MemoryItem>> ITEM_LIST_TYPE = new TypeReference<List<MemoryItem>>() {
     };
@@ -29,7 +29,7 @@ public class JsonMemoryStrategy implements Memory {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Path storagePath;
 
-    public JsonMemoryStrategy(String storagePath) {
+    public JsonMemoryStrategyStrategyImpl(String storagePath) {
         Assert.hasText(storagePath, "storagePath must not be empty");
         this.storagePath = Paths.get(storagePath);
     }

@@ -16,12 +16,12 @@ public class MemoryTool {
     private static final String DEFAULT_USER_ID = "default";
     private static final int DEFAULT_LIMIT = 5;
 
-    private final Memory memory;
+    private final MemoryStrategy memoryStrategy;
     private String userId = DEFAULT_USER_ID;
 
-    public MemoryTool(Memory memory) {
-        Assert.notNull(memory, "memory must not be null");
-        this.memory = memory;
+    public MemoryTool(MemoryStrategy memoryStrategy) {
+        Assert.notNull(memoryStrategy, "memoryStrategy must not be null");
+        this.memoryStrategy = memoryStrategy;
     }
 
     // 每轮对话开始前由 Agent 绑定当前用户，工具执行与模型调用同线程进行，绑定安全。
@@ -31,13 +31,13 @@ public class MemoryTool {
 
     @ToolDescription("记住用户透露的个人信息、偏好或经历；content 为要记住的内容，importance 为重要性（0-1，可省略）")
     public String addMemory(String content, Double importance) {
-        MemoryItem item = memory.add(userId, content, importance);
+        MemoryItem item = memoryStrategy.add(userId, content, importance);
         return "已记住（id=" + item.getId() + "）：" + item.getContent();
     }
 
     @ToolDescription("按关键词搜索当前用户的记忆，返回最相关的记忆条目")
     public String searchMemory(String query, Integer limit) {
-        List<MemoryItem> items = memory.search(userId, query, limit == null ? DEFAULT_LIMIT : limit);
+        List<MemoryItem> items = memoryStrategy.search(userId, query, limit == null ? DEFAULT_LIMIT : limit);
         if (items.isEmpty()) {
             return "没有找到相关记忆。";
         }
@@ -46,7 +46,7 @@ public class MemoryTool {
 
     @ToolDescription("列出当前用户的全部记忆（含 id），用于整体回顾，也用于获取更新某条记忆所需的 id")
     public String listMemory() {
-        List<MemoryItem> items = memory.list(userId);
+        List<MemoryItem> items = memoryStrategy.list(userId);
         if (items.isEmpty()) {
             return "当前没有记忆。";
         }
@@ -55,7 +55,7 @@ public class MemoryTool {
 
     @ToolDescription("按 id 更新一条记忆的 content；importance 可省略表示保持不变")
     public String updateMemory(String id, String content, Double importance) {
-        MemoryItem item = memory.update(userId, id, content, importance);
+        MemoryItem item = memoryStrategy.update(userId, id, content, importance);
         return "已更新（id=" + item.getId() + "）：" + item.getContent();
     }
 

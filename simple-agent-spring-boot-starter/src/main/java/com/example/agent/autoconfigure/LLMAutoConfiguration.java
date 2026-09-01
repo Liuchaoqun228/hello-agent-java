@@ -2,8 +2,8 @@ package com.example.agent.autoconfigure;
 
 import com.example.agent.agent.Agent;
 import com.example.agent.agent.impl.BaseAgent;
-import com.example.agent.memory.JsonMemoryStrategy;
-import com.example.agent.memory.Memory;
+import com.example.agent.memory.JsonMemoryStrategyStrategyImpl;
+import com.example.agent.memory.MemoryStrategy;
 import com.example.agent.memory.MemoryTool;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
@@ -40,16 +40,16 @@ public class LLMAutoConfiguration {
         return agent;
     }
 
-    // 用户未提供自定义 Memory 时，使用每用户一个 JSON 文件的默认实现。
+    // 用户未提供自定义 MemoryStrategy 时，使用每用户一个 JSON 文件的默认实现。
     @Bean
     @ConditionalOnMissingBean
-    public Memory memory(MemoryProperties properties) {
-        return new JsonMemoryStrategy(properties.getStoragePath());
+    public MemoryStrategy memory(MemoryProperties properties) {
+        return new JsonMemoryStrategyStrategyImpl(properties.getStoragePath());
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public MemoryTool memoryTool(Memory memory) {
-        return new MemoryTool(memory);
+    public MemoryTool memoryTool(MemoryStrategy memoryStrategy) {
+        return new MemoryTool(memoryStrategy);
     }
 }
