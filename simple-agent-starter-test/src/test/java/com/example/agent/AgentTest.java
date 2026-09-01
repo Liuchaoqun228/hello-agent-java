@@ -49,16 +49,17 @@ class AgentTest {
 
 
         ChatOptions options = new ChatOptions();
+        options.setSystemPrompt("你是一个 AI 助手 当用户问你不知道的东西时候 你应该优先检索记忆 如果检索不到 你在回答");
         // 每次运行使用独立用户，避免历史记忆文件干扰断言。
-        options.setUserId("it-user-" + UUID.randomUUID());
+        options.setUserId("demo-user-1");
         memoryTool.setUserId(options.getUserId());
         // 注册记忆工具即启用记忆，是否启用由调用方决定。
         toolManager.register(memoryTool);
 
 
-        BaseAgent firstAgent = new BaseAgent(openAIClient, llmProperties.getModel());
-        firstAgent.setToolManager(toolManager);
-        firstAgent.chat("你好，我叫张三，是一名 Java 开发者。请把这些信息记下来。", options);
+//        BaseAgent firstAgent = new BaseAgent(openAIClient, llmProperties.getModel());
+//        firstAgent.setToolManager(toolManager);
+//        firstAgent.chat("你好，我叫张三，是一名 Java 开发者。请把这些信息记下来。", options);
 
         // 新实例没有对话历史，只能依赖记忆工具回答问题，从而验证记忆的真实生效。
         BaseAgent secondAgent = new BaseAgent(openAIClient, llmProperties.getModel());
