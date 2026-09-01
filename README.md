@@ -7,6 +7,7 @@
 - 🚀 **开箱即用**：引入 starter 后，只需在 `application.properties` 中配置 `api-key` 和 `model`，即可注入 `Agent` Bean。
 - 💬 **多轮对话**：`BaseAgent` 内置 `MessageHistoryManager`，自动维护会话上下文，无需手动拼装历史消息。
 - 🛠️ **普通 Java 工具**：调用方自行创建 `ToolManager` 并注册带 `@ToolDescription` 的方法；框架负责参数 Schema 生成、类型转换和调用。
+- 🧠 **记忆系统**：`Memory` 接口 + `JsonMemory` 默认实现，按用户隔离、JSON 文件持久化；注册 `MemoryTool` 即启用，由大模型自主决定何时记住与回忆。
 - 🧩 **易于扩展**：提供 `Agent` 接口与 `AbstractAgent` 抽象类，可方便地派生出具备工具调用、RAG 等能力的自定义 Agent。
 - 🔌 **兼容 OpenAI 协议**：底层使用 `OpenAIOkHttpClient`，支持任意兼容 OpenAI 接口的服务（OpenAI、Azure、本地部署等），通过 `base-url` 切换即可。
 
@@ -17,8 +18,9 @@ hello-agent-java
 ├── simple-agent-spring-boot-starter   # Starter 核心模块
 │   ├── agent        # Agent 接口、AbstractAgent、BaseAgent 实现
 │   ├── message      # Message、MessageRoleEnum、MessageHistoryManager
+│   ├── memory       # Memory 接口、JsonMemory 默认实现、MemoryItem、MemoryTool
 │   ├── tool         # ToolManager、工具注解与工具定义
-│   └── autoconfigure # LLMProperties 与自动配置
+│   └── autoconfigure # LLMProperties、MemoryProperties 与自动配置
 └── simple-agent-starter-test          # 使用示例与集成测试
 ```
 
@@ -109,6 +111,43 @@ options.setSystemPrompt("你是一个专业的 Java 导师。");
 String reply = agent.chat("如何理解依赖注入？", options);
 ```
 
+### 5. 启用记忆
+
+starter 自动装配了 `MemoryTool`（可直接 `@Resource` 注入）。**是否启用记忆由调用方决定：把 `MemoryTool` 注册进 `ToolManager` 即启用，不注册则不生效**。注册后大模型会自主决定何时记住信息、何时查询记忆：
+
+```java
+import com.example.agent.memory.MemoryTool;
+
+@Resource
+private Agent agent;
+@Resource
+private MemoryTool memoryTool;
+
+public void demo() {
+    ToolManager toolManager = new ToolManager();
+    toolManager.register(memoryTool); // 注册即启用记忆
+    agent.setToolManager(toolManager);
+
+    ChatOptions options = new ChatOptions();
+    options.setUserId("user123"); // 记忆按用户隔离
+
+    agent.chat("我叫张三，是一名 Java 开发者。", options);
+    String reply = agent.chat("我叫什么名字？我是做什么工作的？", options);
+    System.out.println(reply);
+}
+```
+
+`MemoryTool` 向模型暴露四个操作：`addMemory`（记住信息，可附重要性 0-1）、`searchMemory`（按关键词搜索）、`listMemory`（列出全部记忆）、`updateMemory`（按 id 更新）。
+
+默认实现 `JsonMemory` 将记忆以 JSON 文件形式保存在数据目录，每个用户一个文件，可通过配置调整位置：
+
+```properties
+# 可选：记忆文件存储目录，默认 ./data/memory/
+simple.agent.memory.storage-path=./data/memory/
+```
+
+如需接入其他存储（数据库、向量库等），实现 `Memory` 接口并提供同名 Bean，即可自动替换默认实现。
+
 ## 核心概念
 
 | 类 | 职责 |
@@ -120,6 +159,10 @@ String reply = agent.chat("如何理解依赖注入？", options);
 | `MessageHistoryManager` | 线程安全的对话历史管理器 |
 | `ToolDefinition` | 一个工具的模型定义和实际调用目标 |
 | `ToolManager` | 手动注册工具、提供工具定义并执行模型请求 |
+| `Memory` | 记忆存储接口，定义 add / search / list / update |
+| `JsonMemory` | 默认记忆实现，每个用户一个 JSON 文件 |
+| `MemoryTool` | 暴露给模型的记忆工具，注册即启用 |
+| `MemoryItem` | 记忆项模型，包含内容、重要性与时间戳 |
 
 ## 环境要求
 
