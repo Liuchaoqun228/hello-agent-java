@@ -2,7 +2,9 @@ package com.example.agent.autoconfigure;
 
 import com.example.agent.agent.Agent;
 import com.example.agent.agent.impl.BaseAgent;
-import com.example.agent.tool.ToolManager;
+import com.example.agent.memory.JsonMemoryStrategy;
+import com.example.agent.memory.Memory;
+import com.example.agent.memory.MemoryTool;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -18,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
         prefix = LLMProperties.PREFIX,
         name = {"api-key", "model"}
 )
-@EnableConfigurationProperties(LLMProperties.class)
+@EnableConfigurationProperties({LLMProperties.class, MemoryProperties.class})
 public class LLMAutoConfiguration {
 
     @Bean
@@ -36,5 +38,18 @@ public class LLMAutoConfiguration {
                                LLMProperties properties) {
         BaseAgent agent = new BaseAgent(openAIClient, properties.getModel());
         return agent;
+    }
+
+    // 用户未提供自定义 Memory 时，使用每用户一个 JSON 文件的默认实现。
+    @Bean
+    @ConditionalOnMissingBean
+    public Memory memory(MemoryProperties properties) {
+        return new JsonMemoryStrategy(properties.getStoragePath());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public MemoryTool memoryTool(Memory memory) {
+        return new MemoryTool(memory);
     }
 }

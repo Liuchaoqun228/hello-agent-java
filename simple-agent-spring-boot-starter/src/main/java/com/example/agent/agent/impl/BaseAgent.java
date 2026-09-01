@@ -5,6 +5,7 @@ import com.example.agent.agent.ChatOptions;
 import com.example.agent.message.Message;
 import com.example.agent.message.MessageHistoryManager;
 import com.example.agent.message.MessageRoleEnum;
+import com.example.agent.memory.MemoryTool;
 import com.example.agent.tool.dto.ToolCall;
 import com.example.agent.tool.dto.ToolDefinition;
 import com.example.agent.tool.ToolManager;
