@@ -18,7 +18,7 @@
 
     <modules>
         <module>simple-agent-spring-boot-starter</module>
-        <module>simple-agent-starter-test</module>
+        <module>simple-agent-examples</module>
     </modules>
 
     <properties>

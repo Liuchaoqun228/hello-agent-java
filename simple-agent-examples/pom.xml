@@ -11,7 +11,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>simple-agent-starter-test</artifactId>
+    <artifactId>simple-agent-examples</artifactId>
 
     <dependencies>
         <dependency>

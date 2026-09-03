@@ -7,7 +7,7 @@
 - 🚀 **开箱即用**：引入 starter 后，只需在 `application.properties` 中配置 `api-key` 和 `model`，即可注入 `Agent` Bean。
 - 💬 **多轮对话**：`BaseAgent` 内置 `MessageHistoryManager`，自动维护会话上下文，无需手动拼装历史消息。
 - 🛠️ **普通 Java 工具**：调用方自行创建 `ToolManager` 并注册带 `@ToolDescription` 的方法；框架负责参数 Schema 生成、类型转换和调用。
-- 🧠 **记忆系统**：`Memory` 接口 + `JsonMemory` 默认实现，按用户隔离、JSON 文件持久化；注册 `MemoryTool` 即启用，由大模型自主决定何时记住与回忆。
+- 🧠 **记忆系统**：`MemoryStrategy` 接口 + JSON 文件默认实现，按用户隔离、持久化存储；注册 `MemoryTool` 即启用，由大模型自主决定何时记住与回忆。
 - 🧩 **易于扩展**：提供 `Agent` 接口与 `AbstractAgent` 抽象类，可方便地派生出具备工具调用、RAG 等能力的自定义 Agent。
 - 🔌 **兼容 OpenAI 协议**：底层使用 `OpenAIOkHttpClient`，支持任意兼容 OpenAI 接口的服务（OpenAI、Azure、本地部署等），通过 `base-url` 切换即可。
 
@@ -21,7 +21,7 @@ hello-agent-java
 │   ├── memory       # Memory 接口、JsonMemory 默认实现、MemoryItem、MemoryTool
 │   ├── tool         # ToolManager、工具注解与工具定义
 │   └── autoconfigure # LLMProperties、MemoryProperties 与自动配置
-└── simple-agent-starter-test          # 使用示例与集成测试
+└── simple-agent-examples              # 可直接运行的使用示例
 ```
 
 ## 快速开始
@@ -129,7 +129,8 @@ public void demo() {
     agent.setToolManager(toolManager);
 
     ChatOptions options = new ChatOptions();
-    options.setUserId("user123"); // 记忆按用户隔离
+    options.setUserId("user123");
+    memoryTool.setUserId(options.getUserId()); // 绑定当前记忆用户
 
     agent.chat("我叫张三，是一名 Java 开发者。", options);
     String reply = agent.chat("我叫什么名字？我是做什么工作的？", options);
@@ -139,14 +140,32 @@ public void demo() {
 
 `MemoryTool` 向模型暴露四个操作：`addMemory`（记住信息，可附重要性 0-1）、`searchMemory`（按关键词搜索）、`listMemory`（列出全部记忆）、`updateMemory`（按 id 更新）。
 
-默认实现 `JsonMemory` 将记忆以 JSON 文件形式保存在数据目录，每个用户一个文件，可通过配置调整位置：
+默认的 `JsonMemoryStrategyStrategyImpl` 将记忆以 JSON 文件形式保存在数据目录，每个用户一个文件，可通过配置调整位置：
 
 ```properties
 # 可选：记忆文件存储目录，默认 ./data/memory/
 simple.agent.memory.storage-path=./data/memory/
 ```
 
-如需接入其他存储（数据库、向量库等），实现 `Memory` 接口并提供同名 Bean，即可自动替换默认实现。
+如需接入其他存储（数据库、向量库等），实现 `MemoryStrategy` 接口并提供对应 Bean，即可自动替换默认实现。
+
+## 可运行示例
+
+`simple-agent-examples` 的 main 代码只保留 `ExampleApplication` 启动类和可复用的 `CalculatorTool`。Agent 的创建和组装过程直接写在三个 Spring Boot 测试中，可在 IDE 中分别运行：
+
+| 示例 | 说明 |
+| --- | --- |
+| `ChatAgentTest` | 在测试中创建 Agent 并连续对话两轮，验证会话上下文 |
+| `ToolAgentTest` | 注入 `CalculatorTool` 并注册到新 Agent，验证模型工具调用 |
+| `MemoryAgentTest` | 注入 `MemoryTool`，使用两个独立 Agent 验证持久记忆 |
+
+运行前至少需要配置 API Key；使用兼容 OpenAI 协议的其他服务时，可以继续覆盖地址和模型：
+
+```bash
+export OPENAI_API_KEY=sk-xxx
+export OPENAI_BASE_URL=https://api.openai.com/v1
+export OPENAI_MODEL=gpt-4o-mini
+```
 
 ## 核心概念
 
@@ -159,8 +178,8 @@ simple.agent.memory.storage-path=./data/memory/
 | `MessageHistoryManager` | 线程安全的对话历史管理器 |
 | `ToolDefinition` | 一个工具的模型定义和实际调用目标 |
 | `ToolManager` | 手动注册工具、提供工具定义并执行模型请求 |
-| `Memory` | 记忆存储接口，定义 add / search / list / update |
-| `JsonMemory` | 默认记忆实现，每个用户一个 JSON 文件 |
+| `MemoryStrategy` | 记忆存储接口，定义 add / search / list / update |
+| `JsonMemoryStrategyStrategyImpl` | 默认记忆实现，每个用户一个 JSON 文件 |
 | `MemoryTool` | 暴露给模型的记忆工具，注册即启用 |
 | `MemoryItem` | 记忆项模型，包含内容、重要性与时间戳 |
 
