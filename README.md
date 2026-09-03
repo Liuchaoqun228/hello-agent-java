@@ -7,6 +7,7 @@
 - 🚀 **开箱即用**：引入 starter 后，只需在 `application.properties` 中配置 `api-key` 和 `model`，即可注入 `Agent` Bean。
 - 💬 **多轮对话**：`BaseAgent` 内置 `MessageHistoryManager`，自动维护会话上下文，无需手动拼装历史消息。
 - 🛠️ **普通 Java 工具**：调用方自行创建 `ToolManager` 并注册带 `@ToolDescription` 的方法；框架负责参数 Schema 生成、类型转换和调用。
+- 🔄 **ReAct 式工具循环**：`BaseAgent` 基于 OpenAI 原生 Tool Calling 完成“决策—行动—观察—继续决策”循环，直到生成最终答案。
 - 🧠 **记忆系统**：`MemoryStrategy` 接口 + JSON 文件默认实现，按用户隔离、持久化存储；注册 `MemoryTool` 即启用，由大模型自主决定何时记住与回忆。
 - 🧩 **易于扩展**：提供 `Agent` 接口与 `AbstractAgent` 抽象类，可方便地派生出具备工具调用、RAG 等能力的自定义 Agent。
 - 🔌 **兼容 OpenAI 协议**：底层使用 `OpenAIOkHttpClient`，支持任意兼容 OpenAI 接口的服务（OpenAI、Azure、本地部署等），通过 `base-url` 切换即可。
@@ -18,7 +19,7 @@ hello-agent-java
 ├── simple-agent-spring-boot-starter   # Starter 核心模块
 │   ├── agent        # Agent 接口、AbstractAgent、BaseAgent 实现
 │   ├── message      # Message、MessageRoleEnum、MessageHistoryManager
-│   ├── memory       # Memory 接口、JsonMemory 默认实现、MemoryItem、MemoryTool
+│   ├── memory       # MemoryStrategy、JSON 默认实现、MemoryItem、MemoryTool
 │   ├── tool         # ToolManager、工具注解与工具定义
 │   └── autoconfigure # LLMProperties、MemoryProperties 与自动配置
 └── simple-agent-examples              # 可直接运行的使用示例
@@ -59,7 +60,7 @@ public void demo() {
 }
 ```
 
-`ToolManager` 由调用方创建并绑定给 `Agent`。即使暂时不使用工具，也应传入一个空的 `ToolManager`。
+`ToolManager` 由调用方创建并绑定给 `Agent`。不使用工具时可以不设置 `ToolManager`。
 
 ### 4. 注册工具
 
@@ -149,6 +150,23 @@ simple.agent.memory.storage-path=./data/memory/
 
 如需接入其他存储（数据库、向量库等），实现 `MemoryStrategy` 接口并提供对应 Bean，即可自动替换默认实现。
 
+## BaseAgent 与 ReAct
+
+`BaseAgent` 没有要求模型输出 `Thought: ... Action: ...` 形式的文本，而是使用 OpenAI 原生 Tool Calling 表达行动。两者的核心循环是一致的：
+
+| ReAct 阶段 | `BaseAgent` 中的实现 |
+| --- | --- |
+| 决策下一步行动 | 模型根据消息历史和工具 Schema 生成响应 |
+| Action | 模型返回结构化 `tool_calls` |
+| 执行行动 | `ToolManager` 转换参数并调用 Java 方法 |
+| Observation | 工具结果转换为 Tool Message 追加到本轮消息 |
+| 继续决策 | 携带 Observation 再次调用模型 |
+| Finish | 模型不再返回工具调用，直接生成最终答案 |
+
+`BaseAgent` 目前最多允许 3 轮工具调用，用于防止模型陷入无限循环。与经典文本 ReAct 相比，这种实现不依赖正则表达式解析模型输出，对工具名称和参数的约束也更明确。
+
+因此，本项目暂不另外提供与 `BaseAgent` 逻辑重复的 `ReActAgent`。如果需要研究经典的显式 ReAct 轨迹，可以直接继承 `AbstractAgent`，使用结构化 JSON 定义 Action，并自行维护 Action / Observation 历史。
+
 ## 可运行示例
 
 `simple-agent-examples` 的 main 代码只保留 `ExampleApplication` 启动类和可复用的 `CalculatorTool`。Agent 的创建和组装过程直接写在三个 Spring Boot 测试中，可在 IDE 中分别运行：
@@ -173,7 +191,7 @@ export OPENAI_MODEL=gpt-4o-mini
 | --- | --- |
 | `Agent` | 顶层接口，定义 `chat(input)` 与 `chat(input, config)` |
 | `AbstractAgent` | 封装 OpenAI 调用细节，处理消息角色映射 |
-| `BaseAgent` | 默认实现，自动管理对话历史并在调用失败时回滚 |
+| `BaseAgent` | 默认实现，管理多轮历史并执行 ReAct 式原生工具调用循环 |
 | `Message` | 消息实体，包含内容、角色、时间戳与扩展元数据 |
 | `MessageHistoryManager` | 线程安全的对话历史管理器 |
 | `ToolDefinition` | 一个工具的模型定义和实际调用目标 |
